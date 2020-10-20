@@ -48,6 +48,7 @@ public class PersonAPITest extends TestBase {
     public static void setUpClass() {
         //This method must be called before you request the EntityManagerFactory
         EMF_Creator.startREST_TestWithDB();
+        
         emf = EMF_Creator.createEntityManagerFactoryForTest();
         List<CityInfo> cityInfoes =TestUtils.makeCityCodesInDB(emf);
         cityInfo2800 = cityInfoes.get(0);
@@ -70,7 +71,9 @@ public class PersonAPITest extends TestBase {
 
     @BeforeEach
     public void setUp() {
+      
         List<Object> persons = TestUtils.makeTestPersonsInDB(cityInfo2800, cityInfo2000, emf);
+      
         p1 = (Person) persons.get(0);
         p2 = (Person) persons.get(1);
         a1 = (Address) persons.get(2);

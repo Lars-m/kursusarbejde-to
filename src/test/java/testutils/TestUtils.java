@@ -43,7 +43,13 @@ public class TestUtils {
         EntityManager em = emf.createEntityManager();
         try {
             em.getTransaction().begin();
-            em.createQuery("DELETE FROM CityInfo");
+            em.createNamedQuery("Phone.deleteAllRows").executeUpdate();
+            em.createNamedQuery("Person.deleteAllRows").executeUpdate();
+            em.createNamedQuery("Address.deleteAllRows").executeUpdate();
+            em.createQuery("DELETE FROM CityInfo").executeUpdate();
+            em.getTransaction().commit();
+//            em.flush();
+            em.getTransaction().begin();
             CityInfo cityInfo2000 = new CityInfo("2000", "Frederiksberg");
             CityInfo cityInfo2800 = new CityInfo("2800", "Lyngby");
             em.persist(cityInfo2000);
