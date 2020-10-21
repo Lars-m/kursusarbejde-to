@@ -3,6 +3,7 @@ package errorhandling;
 public class API_Exception extends Exception {
 
     public static final String INPUTS_MISSING = "One or more required inputs are missing";
+    public static final String PERSON_NOT_FOUND = "Person not found";
     int errorCode;
 
     public API_Exception(String message,int errCode) {

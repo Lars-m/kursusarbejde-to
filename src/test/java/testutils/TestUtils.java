@@ -62,6 +62,10 @@ public class TestUtils {
         }
     }
     
+    public static PhoneDTO findPhoneDTO(List<PhoneDTO> phoneDTOs, String number) {
+        return phoneDTOs.stream().filter(n -> number.equals(n.getNumber())).findFirst().orElse(null);
+    }
+    
     public static void assertSIMPLE_VALUES(PersonDTO p) {
         Assertions.assertNotNull(p.getFirstName());
         Assertions.assertNotNull(p.getLastName());

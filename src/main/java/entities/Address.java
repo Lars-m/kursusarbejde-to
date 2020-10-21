@@ -54,7 +54,7 @@ public class Address implements Serializable {
     }
 
     public String getAdditionalInfo() {
-        return additionalInfo;
+        return additionalInfo !=null ? additionalInfo: "";
     }
 
     public void setAdditionalInfo(String additionalInfo) {

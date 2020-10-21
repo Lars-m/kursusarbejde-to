@@ -1,5 +1,7 @@
 package facades;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import dtos.PersonDTO;
 import entities.Address;
 import entities.CityInfo;
@@ -20,6 +22,8 @@ import org.junit.jupiter.api.Test;
 import static dtos.PersonDTO.SIMPLE;
 import static dtos.PersonDTO.ADDRESS;
 import static dtos.PersonDTO.PHONES;
+import static dtos.PersonDTO.ALL;
+
 import dtos.PhoneDTO;
 import entities.Phone;
 import java.util.Arrays;
@@ -30,17 +34,7 @@ import testutils.TestUtils;
 //@Disabled
 public class PersonFacadeTest extends TestBase {
 
-//    private static EntityManagerFactory emf;
-//    private static PersonFacade facade;
-//    private static Person p1;
-//    private static Person p2;
-//    private static Address a1;
-//    private static Address a2;
-//
-//    //These two instances are set up before all tests, and therefore be used by all tests
-//    private static CityInfo cityInfo2000;
-//    private static CityInfo cityInfo2800;
-
+    private static Gson gson = new Gson();
     public PersonFacadeTest() {
     }
 
@@ -48,7 +42,7 @@ public class PersonFacadeTest extends TestBase {
     public static void setUpClass() {
         emf = EMF_Creator.createEntityManagerFactoryForTest();
         facade = PersonFacade.getInstance(emf);
-        List<CityInfo> cityInfoes =TestUtils.makeCityCodesInDB(emf);
+        List<CityInfo> cityInfoes = TestUtils.makeCityCodesInDB(emf);
         cityInfo2800 = cityInfoes.get(0);
         cityInfo2000 = cityInfoes.get(1);
     }
@@ -60,11 +54,11 @@ public class PersonFacadeTest extends TestBase {
 
     @BeforeEach
     public void setUp() {
-       List<Object> persons = TestUtils.makeTestPersonsInDB(cityInfo2800, cityInfo2000, emf);
-       p1 = (Person) persons.get(0);
-       p2 = (Person) persons.get(1);
-       a1 = (Address) persons.get(2);
-       a2 = (Address) persons.get(3);
+        List<Object> persons = TestUtils.makeTestPersonsInDB(cityInfo2800, cityInfo2000, emf);
+        p1 = (Person) persons.get(0);
+        p2 = (Person) persons.get(1);
+        a1 = (Address) persons.get(2);
+        a2 = (Address) persons.get(3);
     }
 
     @AfterEach
@@ -82,32 +76,26 @@ public class PersonFacadeTest extends TestBase {
         assertEquals(2, facade.getAllPersons().size(), "Expects two rows in the database");
     }
 
-    private void assertSIMPLE_VALUES(PersonDTO p) {
-        Assertions.assertNotNull(p.getFirstName());
-        Assertions.assertNotNull(p.getLastName());
-        Assertions.assertNotNull(p.getEmail());
-        Assertions.assertNotNull(p.getId());
+    @Test
+    public void testGetPerson() throws API_Exception {
+        PersonDTO pDTO = facade.getPerson(p1.getId(), SIMPLE);
+        assertEquals("Kurt", pDTO.getFirstName(), "Expects to find Kurt Wonnegut");
+         TestUtils.assertADDRESS_NOT_EXPECTED(pDTO);
+         TestUtils.assertPHONE_NOT_EXPECTED(pDTO);
     }
-
-    private void assertADDRESS_VALUES(PersonDTO p) {
-        Assertions.assertNotNull(p.getStreet());
-        Assertions.assertNotNull(p.getAdditionalInfo());
-        Assertions.assertNotNull(p.getZip());
+    @Test
+    public void testGetPersonWithAll() throws API_Exception {
+        PersonDTO pDTO = facade.getPerson(p1.getId(), SIMPLE|ADDRESS|PHONES);
+        assertEquals("Kurt", pDTO.getFirstName(), "Expects to find Kurt Wonnegut");
+         TestUtils.assertADDRESS_VALUES(pDTO);
+         TestUtils.assertPHONE_VALUES(pDTO);
     }
-
-    private void assertADDRESS_NOT_EXPECTED(PersonDTO p) {
-        Assertions.assertNull(p.getStreet());
-        Assertions.assertNull(p.getZip());
+    
+    @Test
+    public void getPersonNotExisting() {
+        Assertions.assertThrows(API_Exception.class, () -> facade.getPerson(73846578, SIMPLE));
     }
-
-    private void assertPHONE_VALUES(PersonDTO p) {
-        Assertions.assertNotNull(p.getPhones());
-    }
-
-    private void assertPHONE_NOT_EXPECTED(PersonDTO p) {
-        Assertions.assertNull(p.getPhones());
-    }
-
+    
     @Test
     public void testAddPerson() throws API_Exception {
         PersonDTO p = new PersonDTO("aaa", "bbb", "a@b.dk");
@@ -118,6 +106,7 @@ public class PersonFacadeTest extends TestBase {
         Assertions.assertNotNull(newPerson.getId(), "Expected an id for the new person");
         assertEquals(3, facade.getAllPersons().size(), "Expects three rows in the database");
     }
+   
 
     @Test
     public void testAddPersonVerifyExistingAddressIsUsed() throws API_Exception {
@@ -135,6 +124,13 @@ public class PersonFacadeTest extends TestBase {
             em.close();
         }
     }
+    
+    @Test
+    public void testFindPersonsInCity(){
+        List<PersonDTO> pDTOs = facade.findPersonsInCity("2800", SIMPLE|ADDRESS);
+        assertEquals(pDTOs.size(), 1,"Expected to find one Person in Lyngby");
+        assertEquals(pDTOs.get(0).getZip(), "2800","Expected to find a person from Lyngby");
+  }
 
     @Test
     public void testAddPersonMissingArguments() {
@@ -149,26 +145,72 @@ public class PersonFacadeTest extends TestBase {
     public void testGetAllPersonsDefaultReturnValue() throws API_Exception {
         List<PersonDTO> personDTOs = facade.getAllPersons();
         PersonDTO first = personDTOs.get(0);
-        assertADDRESS_VALUES(first);
-        assertSIMPLE_VALUES(first);
-        assertPHONE_NOT_EXPECTED(first);
+        TestUtils.assertADDRESS_VALUES(first);
+        TestUtils.assertSIMPLE_VALUES(first);
+        TestUtils.assertPHONE_NOT_EXPECTED(first);
     }
 
     @Test
     public void testGetAllPersonsSIMPLE() throws API_Exception {
         List<PersonDTO> personDTOs = facade.getAllPersons(SIMPLE);
         PersonDTO first = personDTOs.get(0);
-        assertSIMPLE_VALUES(first);
-        assertADDRESS_NOT_EXPECTED(first);
+        TestUtils.assertSIMPLE_VALUES(first);
+        TestUtils.assertADDRESS_NOT_EXPECTED(first);
     }
 
     @Test
     public void testGetAllPersonsSIMPLE_ADDRESS_PHONE() throws API_Exception {
         List<PersonDTO> personDTOs = facade.getAllPersons(SIMPLE | ADDRESS | PHONES);
         PersonDTO first = personDTOs.get(0);
-        assertADDRESS_VALUES(first);
-        assertSIMPLE_VALUES(first);
-        assertPHONE_VALUES(first);
+        TestUtils.assertADDRESS_VALUES(first);
+        TestUtils.assertSIMPLE_VALUES(first);
+        TestUtils.assertPHONE_VALUES(first);
+    }
+    
+    @Test
+    public void testEditPersonNewLastnameEmail() throws API_Exception {
+        Person p1Clone = new Person(p1.getFirstName(),"Hansen","new@email.com",null);
+        p1Clone.setId(p1.getId());
+        p1Clone.setAddress(new Address(p1.getAddress().getStreet(),p1.getAddress().getAdditionalInfo(),cityInfo2800));
+        p1Clone.setPhonesFromDTOs(PhoneDTO.makePhoneDTO_List(p1.getPhones()));
+        PersonDTO pDTO = new PersonDTO(p1Clone, ALL);
+        PersonDTO editedPerson = facade.editPerson(pDTO);
+        assertEquals(editedPerson.getLastName(),"Hansen", "Expected name to be changed to Hansen");
+        assertEquals(editedPerson.getEmail(),"new@email.com", "Expected email to be changed to new@email.com");
+        assertEquals(2, facade.getAllPersons().size(), "Expects two rows in the database");
+         
+        EntityManager em = emf.createEntityManager();
+        try {
+            long addressCount = (long) em.createQuery("SELECT COUNT(a) FROM Address a").getSingleResult();
+            assertEquals(2, addressCount, "No new address should be added");
+        } finally {
+            em.close();
+        }
+    }
+     @Test
+    public void testEditPersonRemovePhone() throws API_Exception {
+         System.out.println("TESTING");
+        final String NUMBER_TO_REMOVE = "123";
+        Person p1Clone = new Person(p1.getFirstName(), p1.getLastName(),p1.getEmail(), a1);
+        p1Clone.setId(p1.getId());
+        p1Clone.setAddress(new Address(p1.getAddress().getStreet(),p1.getAddress().getAdditionalInfo(),cityInfo2800));
+        List<PhoneDTO> phoneDTOs = PhoneDTO.makePhoneDTO_List(p1.getPhones());
+        phoneDTOs.remove(TestUtils.findPhoneDTO(phoneDTOs, NUMBER_TO_REMOVE)); //Remove a phonenumber
+        p1Clone.setPhonesFromDTOs(phoneDTOs);
+        
+        PersonDTO pDTO = new PersonDTO(p1Clone, ALL);
+        PersonDTO editedPerson = facade.editPerson(pDTO,ALL);
+        assertEquals(editedPerson.getPhones().size(),1,"Expected only one phone number since 111 was removed");
+        EntityManager em = emf.createEntityManager();
+        try {
+          em.createQuery("select p from Phone p where p.number = :number", Phone.class).setParameter("number",NUMBER_TO_REMOVE).getSingleResult();
+          throw new AssertionError("Should not find phone 123");
+        } catch(Exception e){}
+          finally {
+            em.close();
+        }
+        
+           
     }
 
 }

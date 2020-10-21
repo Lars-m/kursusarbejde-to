@@ -5,6 +5,7 @@ import entities.Person;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import javax.persistence.EntityManager;
 import javax.persistence.Transient;
 
 public class PersonDTO {
@@ -21,6 +22,8 @@ public class PersonDTO {
     public transient static int HOBBIES_SIMPLE = 16;
     @Transient
     public transient static int HOBBIES_ALL = 32;
+    @Transient
+    public transient static int ALL = 64;
 
     private Integer id;
     private String email;
@@ -36,17 +39,18 @@ public class PersonDTO {
     private List<PhoneDTO> phones;
 
     public PersonDTO(){};
+     
     public PersonDTO(Person _person, int personDetails) {
-        if ((personDetails & ID_ONLY) == ID_ONLY) {
+        if (((personDetails & ID_ONLY) == ID_ONLY) ||  ((personDetails & ALL) == ALL)) {
             this.id = _person.getId();
         }
-        if ((personDetails & SIMPLE) == SIMPLE) {
+       if (((personDetails & SIMPLE) == SIMPLE) ||  ((personDetails & ALL) == ALL)) { 
             this.firstName = _person.getFirstName();
             this.lastName = _person.getLastName();
             this.email = _person.getEmail();
             this.id = _person.getId();
         }
-        if ((personDetails & ADDRESS) == ADDRESS) {
+       if (((personDetails & ADDRESS) == ADDRESS) ||  ((personDetails & ALL) == ALL)) { 
             Address address = _person.getAddress();
             if(address !=null){
                 this.street = address.getStreet();
@@ -55,8 +59,8 @@ public class PersonDTO {
                 this.city = address.getCityInfo().getCity();
             }
         }
-        if ((personDetails & PHONES) == PHONES) {
-           this.phones = PhoneDTO.makeHobbyDTO_List(_person.getPhones());
+        if (((personDetails & PHONES) == PHONES) ||  ((personDetails & ALL) == ALL)) { 
+           this.phones = PhoneDTO.makePhoneDTO_List(_person.getPhones());
         }
         if ((personDetails & HOBBIES_SIMPLE) == HOBBIES_SIMPLE) {
           this.hobbiesAsString = _person.getHobbies().stream().map(n -> n.getName()).collect(Collectors.joining(","));
@@ -73,13 +77,7 @@ public class PersonDTO {
         this.lastName = lastName;
     }
     
-    
-    
-    /*public static List<PhoneDTO> makeHobbyDTO_List(List<Phone> phones) {
-        List<PhoneDTO> phoneDTOs = new ArrayList<>();
-        phones.forEach((phone) -> phoneDTOs.add(new PhoneDTO(phone)));
-        return phoneDTOs;
-    }*/
+   
     public static List<PersonDTO> makePersonDTO_List(List<Person> persons,int whatToInclude){
         List<PersonDTO> personDTOs = new ArrayList();
         persons.forEach((person) -> personDTOs.add(new PersonDTO(person,whatToInclude)));

@@ -1,5 +1,6 @@
 package entities;
 
+import dtos.PersonDTO;
 import dtos.PhoneDTO;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -43,7 +44,7 @@ public class Person implements Serializable {
         this.firstName = firstName;
         this.lastName = lastName;
     }
-
+   
     public Person() {
     }
     
@@ -61,7 +62,7 @@ public class Person implements Serializable {
     @ManyToMany
     private final Set<Hobby> hobbies = new HashSet();
     
-    @OneToMany(mappedBy = "person", cascade = {CascadeType.PERSIST, CascadeType.MERGE} )
+    @OneToMany(mappedBy = "person", orphanRemoval = true,  cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE} ) // Remove since phone number ONLY belong to one person
     private List<Phone> phones = new ArrayList();
 
     public List<Hobby> getHobbies() {
@@ -97,7 +98,7 @@ public class Person implements Serializable {
     }
 
     public String getEmail() {
-        return email;
+        return email!=null ? email: "";
     }
 
     public void setEmail(String email) {

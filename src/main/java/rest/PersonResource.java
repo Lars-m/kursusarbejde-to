@@ -17,6 +17,7 @@ import static dtos.PersonDTO.SIMPLE;
 import static dtos.PersonDTO.ADDRESS;
 import static dtos.PersonDTO.PHONES;
 import java.util.List;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 import static utils.StringUtil.isBlank;
 
@@ -42,32 +43,30 @@ public class PersonResource {
         return "{\"count\":"+count+"}";  //Done manually so no need for a DTO
     }
     
-    @Path("all")
+    @Path("a")
     @GET
     @Produces({MediaType.APPLICATION_JSON})
     public String getAllPersons( @QueryParam("include") String include) throws API_Exception {
         int toInclude = SIMPLE;
         if(!isBlank(include)){
-            String[] values = include.split("_");
-            toInclude = 0;
-            for(String val : values){
-              if(val.equals("simple")){
-                  toInclude = toInclude | SIMPLE;
-              }    
-              if(val.equals("address")){
-                  toInclude = toInclude | ADDRESS;
-              }    
-              if(val.equals("phones")){
-                  toInclude = toInclude | PHONES;
-              }    
-            }
+            toInclude = handleInclude(include, toInclude);
         }
- 
         List<PersonDTO> personDTOs = FACADE.getAllPersons(toInclude);
         return GSON.toJson(personDTOs);
     }
     
-    
+    @Path("/{id}")
+    @GET
+    @Produces({MediaType.APPLICATION_JSON})
+    public String getPerson(@PathParam("id") int id, @QueryParam("include") String include) throws API_Exception {
+        int toInclude = SIMPLE;
+        if(!isBlank(include)){
+            toInclude = handleInclude(include, toInclude);
+        }
+        PersonDTO personDTO = FACADE.getPerson(id,toInclude);
+        return GSON.toJson(personDTO);
+    }
+
     @POST
     @Produces({MediaType.APPLICATION_JSON})
     @Consumes({MediaType.APPLICATION_JSON})
@@ -77,5 +76,23 @@ public class PersonResource {
         pDTO = FACADE.addPerson(pDTO);
         return GSON.toJson(pDTO);
         //return "{\"msg\":\"XXX\"}";
+    }
+    
+    
+    private int handleInclude(String include, int toInclude) {
+        String[] values = include.split("_");
+        toInclude = 0;
+        for(String val : values){
+            if(val.equals("simple")){
+                toInclude = toInclude | SIMPLE;
+            }
+            if(val.equals("address")){
+                toInclude = toInclude | ADDRESS;
+            }
+            if(val.equals("phones")){
+                toInclude = toInclude | PHONES;
+            }
+        }
+        return toInclude;
     }
 }

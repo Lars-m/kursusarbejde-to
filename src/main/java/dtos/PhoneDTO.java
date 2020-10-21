@@ -18,7 +18,7 @@ public class PhoneDTO {
         this.description = des;
     }
     
-     public static List<PhoneDTO> makeHobbyDTO_List(List<Phone> phones) {
+     public static List<PhoneDTO> makePhoneDTO_List(List<Phone> phones) {
         List<PhoneDTO> phoneDTOs = new ArrayList<>();
         phones.forEach((phone) -> phoneDTOs.add(new PhoneDTO(phone)));
         return phoneDTOs;
