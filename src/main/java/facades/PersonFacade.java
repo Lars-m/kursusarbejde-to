@@ -78,14 +78,14 @@ public class PersonFacade {
     public PersonDTO editPerson(PersonDTO pDTO) throws API_Exception {
         return editPerson(pDTO, SIMPLE);
     }
-    
-    public List<PersonDTO> findPersonsInCity(String zip, int whatToInclude){
+
+    public List<PersonDTO> findPersonsInCity(String zip, int whatToInclude) {
         EntityManager em = getEntityManager();
-        try{
+        try {
             TypedQuery<Person> query = em.createQuery("select p from Person p where p.address.cityInfo.zipCode = :zip", Person.class).setParameter("zip", zip);
             List<Person> persons = query.getResultList();
-            return  PersonDTO.makePersonDTO_List(persons, whatToInclude);
-        }finally {
+            return PersonDTO.makePersonDTO_List(persons, whatToInclude);
+        } finally {
             em.close();
         }
     }
@@ -94,7 +94,7 @@ public class PersonFacade {
         if ((isBlank(pDTO.getFirstName()) || isBlank(pDTO.getLastName()) || isBlank(pDTO.getEmail()))) {
             throw new API_Exception(API_Exception.INPUTS_MISSING, 400);
         }
-
+        Address addressToRemove = null;
         EntityManager em = getEntityManager();
         try {
             Person person = em.find(Person.class, pDTO.getId());
@@ -109,19 +109,29 @@ public class PersonFacade {
             Address address = null;
             if (person.getAddress() == null) { // If Person did not previously have an address, make one
                 if (!(isBlank(pDTO.getStreet()) && isBlank(pDTO.getZip()))) {
-                    address = makeAddress(em, pDTO, address);
+                    address = (Address) makeAddress(em, pDTO, address)[0];
                     person.setAddress(address);
                 }
             } else {
                 if (!(isBlank(pDTO.getStreet()) && isBlank(pDTO.getZip()))) {
-                    person.getAddress().setStreet(pDTO.getStreet());
-                    person.getAddress().setAdditionalInfo(pDTO.getAdditionalInfo());
-                    CityInfo cInfo = em.find(CityInfo.class, pDTO.getZip());
-                    person.getAddress().setCityInfo(cInfo);
+                    if (person.getAddress().numberOfPersonsOnThisAddress() > 1) {
+                        //We cannot change address, since we don't know whether everyone has moved. Make a new
+                        address = (Address) makeAddress(em, pDTO, null)[0];
+                        person.getAddress().removePersonFromAddress(person);
+                        person.setAddress(address);
+                    } else {
+                        Object[] result = makeAddress(em,pDTO,person.getAddress());
+                        address = (Address)result[0];
+                        boolean movedToAnExistingAddress = (boolean) result[1];
+                        if(movedToAnExistingAddress){ //Remove old Address
+                            addressToRemove = person.getAddress();
+                            addressToRemove.removeAllFromAddress();
+                        }
+                        person.setAddress(address);
+                    }
                 }
             }
 
-            // if (pDTO.getPhones() != null && pDTO.getPhones().size() > 0) {
             if (person.getPhones() == null || person.getPhones().isEmpty()) {
                 person.setPhonesFromDTOs(pDTO.getPhones());
             } else {
@@ -141,6 +151,9 @@ public class PersonFacade {
             }
             em.getTransaction().begin();
             em.merge(person);
+            if(addressToRemove != null){
+                em.remove(addressToRemove);
+            }
             em.getTransaction().commit();
             return new PersonDTO(person, returnValuesToInclude);
             //return new PersonDTO(person, SIMPLE);
@@ -166,7 +179,7 @@ public class PersonFacade {
         try {
             Address address = null;
             if (!(isBlank(p.getStreet()) && isBlank(p.getZip()))) {
-                address = makeAddress(em, p, address);
+                address = (Address)makeAddress(em, p, address)[0];
             }
             Person person = new Person(p.getFirstName(), p.getLastName(), p.getEmail(), address);
             if (p.getPhones() != null && p.getPhones().size() > 0) {
@@ -184,19 +197,34 @@ public class PersonFacade {
         }
     }
 
-    private Address makeAddress(EntityManager em, PersonDTO p, Address address) {
+    /**
+     * Returns an address created using one of the three strategies explained here:
+     * 1) An existing address, if one matching street, additionalInfo and zip is found
+     * 2) A new address if null was passed in via address
+     * 3) An edited address, if an existing address was passed in
+     * @param em 
+     * @param p PersonDTO with values for the new or edited address
+     * @param address An existing address or NULL
+     * @return The new, existing or edited address
+     */
+    private Object[]  makeAddress(EntityManager em, PersonDTO p, Address address) {
         CityInfo cityInfo = em.find(CityInfo.class, p.getZip());
         TypedQuery<Address> query = em.createQuery("SELECT a FROM Address a WHERE a.street = :street AND a.cityInfo = :cityInfo", Address.class);
         query.setParameter("street", p.getStreet());
         query.setParameter("cityInfo", cityInfo);
         try {
-            address = query.getSingleResult();
-        } catch (NoResultException e) {
-        }
+            Address someOneElseAlreadyLivesHere = query.getSingleResult();
+            return new Object[] { someOneElseAlreadyLivesHere,true};
+            //return someOneElseAlreadyLivesHere;
+        } catch (NoResultException e) {}
         if (address == null) {
             address = new Address(p.getStreet(), p.getAdditionalInfo(), cityInfo);
+        } else {
+            address.setStreet(p.getStreet());
+            address.setAdditionalInfo(p.getAdditionalInfo());
+            address.setCityInfo(cityInfo);
         }
-        return address;
+        return new Object[] { address,false};
     }
 
     public long getPersonCount() {

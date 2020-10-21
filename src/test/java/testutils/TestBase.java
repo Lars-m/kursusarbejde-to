@@ -11,6 +11,7 @@ public class TestBase {
     protected static PersonFacade facade;
     protected static Person p1;
     protected static Person p2;
+    protected static Person personThatSharesAddressWithP1;
     protected static Address a1;
     protected static Address a2;
 

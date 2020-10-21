@@ -43,7 +43,7 @@ public class PersonResource {
         return "{\"count\":"+count+"}";  //Done manually so no need for a DTO
     }
     
-    @Path("a")
+    @Path("all")
     @GET
     @Produces({MediaType.APPLICATION_JSON})
     public String getAllPersons( @QueryParam("include") String include) throws API_Exception {

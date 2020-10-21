@@ -2,10 +2,9 @@
 package entities;
 
 import java.io.Serializable;
-import java.util.HashSet;
-import java.util.Hashtable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -34,7 +33,17 @@ public class Address implements Serializable {
     private CityInfo cityInfo;
     
     @OneToMany(mappedBy = "address")
-    private Set<Person> persons = new HashSet<>();
+    private List<Person> persons = new ArrayList<>();
+
+    public int numberOfPersonsOnThisAddress() {
+        return persons.size();
+    }
+    public void removeAllFromAddress() {
+        persons = new ArrayList<>();
+    }
+    public void removePersonFromAddress(Person p) {
+        persons.remove(p);
+    }
 
     public Address(String street, String additionalInfo, CityInfo cityInfo) {
         this.street = street;

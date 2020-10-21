@@ -10,6 +10,8 @@ import java.util.List;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import org.junit.jupiter.api.Assertions;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static testutils.TestBase.emf;
 
 public class TestUtils {
 
@@ -24,6 +26,8 @@ public class TestUtils {
             Address a2 = new Address("Roskildevej 23", "xxx", cityInfo2000);
             Person p2 = new Person("Janne", "Wonnegut", "j@b.dk", a2);
             p2.setPhonesFromDTOs(phones2);
+            
+            Person personThatSharesAddressWithP1 = new Person("Signe","Wonnegut","signe@a.dk",a1);
 
             em.getTransaction().begin();
             em.createNamedQuery("Phone.deleteAllRows").executeUpdate();
@@ -32,8 +36,9 @@ public class TestUtils {
 
             em.persist(p1);
             em.persist(p2);
+            em.persist(personThatSharesAddressWithP1);
             em.getTransaction().commit();
-            return Arrays.asList(p1, p2,a1,a2);
+            return Arrays.asList(p1, p2, personThatSharesAddressWithP1, a1,a2);
         } finally {
             em.close();
         }
@@ -64,6 +69,16 @@ public class TestUtils {
     
     public static PhoneDTO findPhoneDTO(List<PhoneDTO> phoneDTOs, String number) {
         return phoneDTOs.stream().filter(n -> number.equals(n.getNumber())).findFirst().orElse(null);
+    }
+    
+    public static long numberOfAddresses(){
+         EntityManager em = emf.createEntityManager();
+        try {
+            long addressCount = (long) em.createQuery("SELECT COUNT(a) FROM Address a").getSingleResult();
+            return addressCount;
+        } finally {
+            em.close();
+        }
     }
     
     public static void assertSIMPLE_VALUES(PersonDTO p) {
