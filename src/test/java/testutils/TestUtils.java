@@ -1,6 +1,7 @@
 package testutils;
 
 import dtos.PersonDTO;
+import static dtos.PersonDTO.ALL;
 import dtos.PhoneDTO;
 import entities.Address;
 import entities.CityInfo;
@@ -11,7 +12,9 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import org.junit.jupiter.api.Assertions;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static testutils.TestBase.cityInfo2800;
 import static testutils.TestBase.emf;
+import static testutils.TestBase.p1;
 
 public class TestUtils {
 
@@ -79,6 +82,25 @@ public class TestUtils {
         } finally {
             em.close();
         }
+    }
+    
+    public static PersonDTO makeJanFromLyngby(){
+        PersonDTO p = new PersonDTO("Jan", "Olsen", "jan@b.dk");
+        p.setStreet("Lyngbyvej 100");
+        p.setZip("2800");
+        p.setPhones(Arrays.asList(new PhoneDTO("1111", "x1111")));
+        return p;
+    }
+    
+    public static PersonDTO makeCloneWithNameChanges(Person p,String fName,String lName, String _email){
+        String firstName = fName!= null ? fName : p.getFirstName();
+        String lastName = lName != null ? lName : p.getLastName();
+        String email = _email != null ? _email : p.getEmail();
+        Person p1Clone = new Person(firstName,lastName,email, null);
+        p1Clone.setId(p.getId());
+        p1Clone.setAddress(new Address(p.getAddress().getStreet(), p.getAddress().getAdditionalInfo(), p.getAddress().getCityInfo()));
+        p1Clone.setPhonesFromDTOs(PhoneDTO.makePhoneDTO_List(p.getPhones()));
+        return new PersonDTO(p1Clone, ALL);
     }
     
     public static void assertSIMPLE_VALUES(PersonDTO p) {

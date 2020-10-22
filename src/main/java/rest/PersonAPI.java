@@ -16,13 +16,17 @@ import javax.ws.rs.core.MediaType;
 import static dtos.PersonDTO.SIMPLE;
 import static dtos.PersonDTO.ADDRESS;
 import static dtos.PersonDTO.PHONES;
+import static dtos.PersonDTO.HOBBIES_SIMPLE;
+import static dtos.PersonDTO.ALL;
+
 import java.util.List;
+import javax.ws.rs.PUT;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 import static utils.StringUtil.isBlank;
 
 @Path("person")
-public class PersonResource {
+public class PersonAPI {
 
     private static final EntityManagerFactory EMF = EMF_Creator.createEntityManagerFactory();
        
@@ -55,7 +59,7 @@ public class PersonResource {
         return GSON.toJson(personDTOs);
     }
     
-    @Path("/{id}")
+    @Path("{id}")
     @GET
     @Produces({MediaType.APPLICATION_JSON})
     public String getPerson(@PathParam("id") int id, @QueryParam("include") String include) throws API_Exception {
@@ -66,16 +70,39 @@ public class PersonResource {
         PersonDTO personDTO = FACADE.getPerson(id,toInclude);
         return GSON.toJson(personDTO);
     }
+    
+    @Path("all-in-city/{zip}")
+    @GET
+    @Produces({MediaType.APPLICATION_JSON})
+    public String getAllInCity(@PathParam("zip") String zip, @QueryParam("include") String include) throws API_Exception {
+        int toInclude = SIMPLE;
+        if(!isBlank(include)){
+            toInclude = handleInclude(include, toInclude);
+        }
+        List<PersonDTO> personDTOs = FACADE.findPersonsInCity(zip, toInclude);
+        return GSON.toJson(personDTOs);
+    }
 
     @POST
     @Produces({MediaType.APPLICATION_JSON})
     @Consumes({MediaType.APPLICATION_JSON})
     public String addPerson(String person) throws API_Exception {
-        System.out.println(person);
         PersonDTO pDTO = GSON.fromJson(person, PersonDTO.class);
         pDTO = FACADE.addPerson(pDTO);
         return GSON.toJson(pDTO);
-        //return "{\"msg\":\"XXX\"}";
+    }
+    
+    @PUT
+    @Produces({MediaType.APPLICATION_JSON})
+    @Consumes({MediaType.APPLICATION_JSON})
+    public String editPerson(String person,@QueryParam("include") String include) throws API_Exception {
+        int toInclude = SIMPLE;
+        if(!isBlank(include)){
+            toInclude = handleInclude(include, toInclude);
+        }
+        PersonDTO pDTO = GSON.fromJson(person, PersonDTO.class);
+        pDTO = FACADE.editPerson(pDTO,toInclude);
+        return GSON.toJson(pDTO);
     }
     
     
@@ -83,6 +110,10 @@ public class PersonResource {
         String[] values = include.split("_");
         toInclude = 0;
         for(String val : values){
+            if(val.equals("all")){
+                toInclude = toInclude | ALL;
+                return toInclude;
+            }
             if(val.equals("simple")){
                 toInclude = toInclude | SIMPLE;
             }
@@ -91,6 +122,9 @@ public class PersonResource {
             }
             if(val.equals("phones")){
                 toInclude = toInclude | PHONES;
+            }
+            if(val.equals("hobby-simple")){
+                toInclude = toInclude | HOBBIES_SIMPLE;
             }
         }
         return toInclude;

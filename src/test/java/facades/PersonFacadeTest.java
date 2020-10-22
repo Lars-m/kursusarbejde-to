@@ -101,10 +101,7 @@ public class PersonFacadeTest extends TestBase {
 
     @Test
     public void testAddPerson() throws API_Exception {
-        PersonDTO p = new PersonDTO("aaa", "bbb", "a@b.dk");
-        p.setStreet("Lyngbyvej 100");
-        p.setZip("2800");
-        p.setPhones(Arrays.asList(new PhoneDTO("1111", "x1111")));
+        PersonDTO p = TestUtils.makeJanFromLyngby();
         PersonDTO newPerson = facade.addPerson(p);
         Assertions.assertNotNull(newPerson.getId(), "Expected an id for the new person");
         assertEquals(4, facade.getAllPersons().size(), "Expects four rows in the database");
@@ -172,23 +169,13 @@ public class PersonFacadeTest extends TestBase {
 
     @Test
     public void testEditPersonNewLastnameEmail() throws API_Exception {
-        Person p1Clone = new Person(p1.getFirstName(), "Hansen", "new@email.com", null);
-        p1Clone.setId(p1.getId());
-        p1Clone.setAddress(new Address(p1.getAddress().getStreet(), p1.getAddress().getAdditionalInfo(), cityInfo2800));
-        p1Clone.setPhonesFromDTOs(PhoneDTO.makePhoneDTO_List(p1.getPhones()));
-        PersonDTO pDTO = new PersonDTO(p1Clone, ALL);
+        PersonDTO pDTO = TestUtils.makeCloneWithNameChanges(p1, null, "Hansen", "new@email.com");
         PersonDTO editedPerson = facade.editPerson(pDTO);
         assertEquals(editedPerson.getLastName(), "Hansen", "Expected name to be changed to Hansen");
         assertEquals(editedPerson.getEmail(), "new@email.com", "Expected email to be changed to new@email.com");
         assertEquals(3, facade.getAllPersons().size(), "Expects two rows in the database");
         assertEquals(2, TestUtils.numberOfAddresses(), "No new address should be added");
         EntityManager em = emf.createEntityManager();
-//        try {
-//            long addressCount = (long) em.createQuery("SELECT COUNT(a) FROM Address a").getSingleResult();
-//            assertEquals(2, addressCount, "No new address should be added");
-//        } finally {
-//            em.close();
-//        }
     }
 
     @Test

@@ -47,10 +47,7 @@ public class Person implements Serializable {
    
     public Person() {
     }
-    
-
-    
-    
+   
     public Address getAddress() {
         return address;
     }
@@ -59,8 +56,8 @@ public class Person implements Serializable {
         this.address = address;
     }
     
-    @ManyToMany
-    private final Set<Hobby> hobbies = new HashSet();
+    @ManyToMany(cascade = {CascadeType.MERGE})
+    private final Set<Hobby> hobbies = new HashSet<>();
     
     @OneToMany(mappedBy = "person", orphanRemoval = true,  cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE} ) // Remove since phone number ONLY belong to one person
     private List<Phone> phones = new ArrayList();
@@ -90,6 +87,10 @@ public class Person implements Serializable {
     public void addHobby(Hobby hobby){
         hobbies.add(hobby);
         hobby.addPerson(this); 
+    }
+    public void removeHobby(Hobby hobby){
+        hobbies.remove(hobby);
+        hobby.getPersons().remove(this); 
     }
     
     public void addPhone(Phone p){

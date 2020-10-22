@@ -2,6 +2,7 @@ package facades;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import dtos.HobbyDTO;
 import dtos.PersonDTO;
 import dtos.PhoneDTO;
 import entities.Address;
@@ -20,6 +21,7 @@ import static dtos.PersonDTO.ID_ONLY;
 import static dtos.PersonDTO.SIMPLE;
 import static dtos.PersonDTO.ADDRESS;
 import static dtos.PersonDTO.PHONES;
+import entities.Hobby;
 import java.util.ArrayList;
 
 public class PersonFacade {
@@ -198,10 +200,11 @@ public class PersonFacade {
     }
 
     /**
-     * Returns an address created using one of the three strategies explained here:
+     * Returns List<Object> where first element contains address created using one of the three strategies explained here:
      * 1) An existing address, if one matching street, additionalInfo and zip is found
      * 2) A new address if null was passed in via address
      * 3) An edited address, if an existing address was passed in
+     * The second element in the returned List is true if an existing address was used, otherwise false
      * @param em 
      * @param p PersonDTO with values for the new or edited address
      * @param address An existing address or NULL
@@ -236,17 +239,58 @@ public class PersonFacade {
             em.close();
         }
     }
+    
+    public List<HobbyDTO> addHobbyToPerson(int personId,String hobbyKey,int whatToInclude) throws API_Exception{
+         EntityManager em = getEntityManager();
+        try {
+            Person person = em.find(Person.class, personId);
+            Hobby hobby = em.find(Hobby.class, hobbyKey);
+            if (person == null) {
+                throw new API_Exception(API_Exception.PERSON_NOT_FOUND, 404);
+            }
+            if (hobby == null) {
+                throw new API_Exception("Hobby ("+hobbyKey+") Not found", 404);
+            }
+            person.addHobby(hobby);
+            em.getTransaction().begin();
+            em.merge(person);
+            em.getTransaction().commit();
+            return HobbyDTO.makeHobbyDTO_List(person.getHobbies(), HobbyDTO.ALL);
+        }finally {
+            em.close();
+        }
+    }
+    public List<HobbyDTO> removeHobbyFromPerson(int personId,String hobbyKey,int whatToInclude) throws API_Exception{
+         EntityManager em = getEntityManager();
+        try {
+            Person person = em.find(Person.class, personId);
+            Hobby hobby = em.find(Hobby.class, hobbyKey);
+            if (person == null) {
+                throw new API_Exception(API_Exception.PERSON_NOT_FOUND, 404);
+            }
+            if (hobby == null) {
+                throw new API_Exception("Hobby ("+hobbyKey+") Not found", 404);
+            }
+            person.removeHobby(hobby);
+            em.getTransaction().begin();
+            em.merge(person);
+            em.getTransaction().commit();
+            return HobbyDTO.makeHobbyDTO_List(person.getHobbies(), HobbyDTO.ALL);
+        }finally {
+            em.close();
+        }
+    }
 
     public static void main(String[] args) throws API_Exception {
         PersonFacade facade = PersonFacade.getInstance(utils.EMF_Creator.createEntityManagerFactory());
         PersonDTO p = new PersonDTO();
-        p.setFirstName("Kurt");
+        p.setFirstName("Janne");
         p.setLastName("Wonnegut");
-        p.setEmail("a@b.dk");
+        p.setEmail("janne@b.dk");
         p.setStreet("Lyngbyvej 45");
         p.setZip("2800");
 
-        List<PhoneDTO> phones = Arrays.asList(new PhoneDTO("333333", "private"), new PhoneDTO("666667", "work"));
+        List<PhoneDTO> phones = Arrays.asList(new PhoneDTO("4444", "private"));
         p.setPhones(phones);
         PersonDTO pDTO = facade.addPerson(p, SIMPLE | ADDRESS | PHONES);
         Gson gson = new GsonBuilder().setPrettyPrinting().create();

@@ -62,11 +62,11 @@ public class PersonDTO {
         if (((personDetails & PHONES) == PHONES) ||  ((personDetails & ALL) == ALL)) { 
            this.phones = PhoneDTO.makePhoneDTO_List(_person.getPhones());
         }
-        if ((personDetails & HOBBIES_SIMPLE) == HOBBIES_SIMPLE) {
+        if ((personDetails & HOBBIES_SIMPLE) == HOBBIES_SIMPLE ||  ((personDetails & ALL) == ALL)) {
           this.hobbiesAsString = _person.getHobbies().stream().map(n -> n.getName()).collect(Collectors.joining(","));
         }
-        if ((personDetails & HOBBIES_ALL) == HOBBIES_ALL) {
-          this.hobbies = HobbyDTO.makeHobbyDTO_List(_person.getHobbies());
+        if ((personDetails & HOBBIES_ALL) == HOBBIES_ALL  ||  ((personDetails & ALL) == ALL)) {
+          this.hobbies = HobbyDTO.makeHobbyDTO_List(_person.getHobbies(),HobbyDTO.ALL);
         }
     }
 
