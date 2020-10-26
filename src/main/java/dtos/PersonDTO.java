@@ -55,8 +55,10 @@ public class PersonDTO {
             if(address !=null){
                 this.street = address.getStreet();
                 this.additionalInfo = address.getAdditionalInfo();
-                this.zip = address.getCityInfo().getZipCode();
-                this.city = address.getCityInfo().getCity();
+                if(address.getCityInfo()!=null){
+                  this.zip = address.getCityInfo().getZipCode();
+                  this.city = address.getCityInfo().getCity();
+                }
             }
         }
         if (((personDetails & PHONES) == PHONES) ||  ((personDetails & ALL) == ALL)) { 
